@@ -1,0 +1,18 @@
+{
+  "modelConfigs": {},
+  "evaluationStatus": {},
+  "commonDatasets": {
+    "standard": [],
+    "COT": []
+  },
+  "datasets": {
+    "predefined": []
+  },
+  "evaluationMetrics": {},
+  "modelTypes": {},
+  "systemConfig": {},
+  "metadata": {
+    "version": "1.0.0",
+    "description": "Default AutoEval configuration"
+  }
+}

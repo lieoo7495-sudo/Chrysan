@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoEval 数据管理器</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="all.min.css" rel="stylesheet">
+    <style>
+        .data-section {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .data-section h3 {
+            color: #4361ee;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .data-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            border-left: 4px solid #4361ee;
+        }
+        .data-card h4 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .data-item:last-child {
+            border-bottom: none;
+        }
+        .data-label {
+            font-weight: 600;
+            color: #4a5568;
+        }
+        .data-value {
+            color: #718096;
+            font-family: monospace;
+        }
+        .status-badge {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        .status-success {
+            background-color: #48bb78;
+            color: white;
+        }
+        .status-warning {
+            background-color: #ed8936;
+            color: white;
+        }
+        .status-info {
+            background-color: #4299e1;
+            color: white;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 0.85rem;
+        }
+        .json-viewer {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .metadata-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .metadata-info h2 {
+            margin-bottom: 10px;
+        }
+        .metadata-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1><i class="fas fa-database"></i> AutoEval 数据管理器</h1>
+            <p>统一管理模拟数据和系统配置</p>
+        </header>
+
+        <div class="metadata-info">
+            <h2><i class="fas fa-info-circle"></i> 系统信息</h2>
+            <div id="metadataContent">
+                <p>正在加载系统信息...</p>
+            </div>
+        </div>
+
+        <div class="data-section">
+            <h3><i class="fas fa-robot"></i> 模型配置数据</h3>
+            <div class="action-buttons">
+                <button id="reloadModelsBtn" class="btn btn-primary btn-sm">
+                    <i class="fas fa-sync-alt"></i> 重新加载
+                </button>
+                <button id="viewModelsBtn" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-eye"></i> 查看JSON
+                </button>
+            </div>
+            <div id="modelsContent">
+                <p>正在加载模型数据...</p>
+            </div>
+        </div>
+
+        <div class="data-section">
+            <h3><i class="fas fa-list"></i> 数据集配置</h3>
+            <div class="action-buttons">
+                <button id="reloadDatasetsBtn" class="btn btn-primary btn-sm">
+                    <i class="fas fa-sync-alt"></i> 重新加载
+                </button>
+                <button id="viewDatasetsBtn" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-eye"></i> 查看JSON
+                </button>
+            </div>
+            <div id="datasetsContent">
+                <p>正在加载数据集信息...</p>
+            </div>
+        </div>
+
+        <div class="data-section">
+            <h3><i class="fas fa-chart-line"></i> 评估指标配置</h3>
+            <div class="action-buttons">
+                <button id="reloadMetricsBtn" class="btn btn-primary btn-sm">
+                    <i class="fas fa-sync-alt"></i> 重新加载
+                </button>
+                <button id="viewMetricsBtn" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-eye"></i> 查看JSON
+                </button>
+            </div>
+            <div id="metricsContent">
+                <p>正在加载评估指标信息...</p>
+            </div>
+        </div>
+
+        <div class="data-section">
+            <h3><i class="fas fa-cogs"></i> 系统配置</h3>
+            <div class="action-buttons">
+                <button id="reloadConfigBtn" class="btn btn-primary btn-sm">
+                    <i class="fas fa-sync-alt"></i> 重新加载
+                </button>
+                <button id="viewConfigBtn" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-eye"></i> 查看JSON
+                </button>
+            </div>
+            <div id="configContent">
+                <p>正在加载系统配置...</p>
+            </div>
+        </div>
+
+        <div class="data-section">
+            <h3><i class="fas fa-tools"></i> 工具操作</h3>
+            <div class="action-buttons">
+                <button id="exportAllBtn" class="btn btn-success btn-sm">
+                    <i class="fas fa-download"></i> 导出所有数据
+                </button>
+                <button id="validateDataBtn" class="btn btn-warning btn-sm">
+                    <i class="fas fa-check-circle"></i> 验证数据完整性
+                </button>
+                <button id="clearCacheBtn" class="btn btn-danger btn-sm">
+                    <i class="fas fa-trash"></i> 清除缓存
+                </button>
+            </div>
+            <div id="toolsContent">
+                <p>选择操作以管理数据...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="mock.js"></script>
+    <script>
+        // 数据管理器页面逻辑
+        class DataManagerUI {
+            constructor() {
+                this.initialize();
+            }
+
+            async initialize() {
+                await this.loadMetadata();
+                await this.loadModelsData();
+                await this.loadDatasetsData();
+                await this.loadMetricsData();
+                await this.loadConfigData();
+                this.setupEventListeners();
+            }
+
+            async loadMetadata() {
+                try {
+                    const metadata = window.mockDataManager.getMetadata();
+                    const content = document.getElementById('metadataContent');
+                    
+                    content.innerHTML = `
+                        <div class="metadata-grid">
+                            <div class="data-card">
+                                <h4>版本信息</h4>
+                                <div class="data-item">
+                                    <span class="data-label">版本:</span>
+                                    <span class="data-value">${metadata.version || 'N/A'}</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="data-label">更新日期:</span>
+                                    <span class="data-value">${metadata.last_updated || 'N/A'}</span>
+                                </div>
+                            </div>
+                            <div class="data-card">
+                                <h4>系统状态</h4>
+                                <div class="data-item">
+                                    <span class="data-label">数据加载:</span>
+                                    <span class="status-badge status-success">成功</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="data-label">数据源:</span>
+                                    <span class="data-value">mock.json</span>
+                                </div>
+                            </div>
+                            <div class="data-card">
+                                <h4>描述</h4>
+                                <div class="data-item">
+                                    <span class="data-value">${metadata.description || 'AutoEval系统模拟数据配置文件'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } catch (error) {
+                    console.error('Failed to load metadata:', error);
+                }
+            }
+
+            async loadModelsData() {
+                try {
+                    const models = window.mockDataManager.getData();
+                    const content = document.getElementById('modelsContent');
+                    
+                    const modelCount = Object.keys(models).length;
+                    const completedCount = Object.values(models).filter(model => 
+                        model.Eval_Statu.VLMEvalKit.Statu === 1 || 
+                        model.Eval_Statu.VLMEvalKit_COT.Statu === 1
+                    ).length;
+
+                    content.innerHTML = `
+                        <div class="data-grid">
+                            <div class="data-card">
+                                <h4>模型统计</h4>
+                                <div class="data-item">
+                                    <span class="data-label">总模型数:</span>
+                                    <span class="data-value">${modelCount}</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="data-label">已完成评测:</span>
+                                    <span class="data-value">${completedCount}</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="data-label">待评测:</span>
+                                    <span class="data-value">${modelCount - completedCount}</span>
+                                </div>
+                            </div>
+                            <div class="data-card">
+                                <h4>模型类型分布</h4>
+                                <div class="data-item">
+                                    <span class="data-label">LLM:</span>
+                                    <span class="data-value">${Object.values(models).filter(m => m.data.model_name.includes('LLaMA') || m.data.model_name.includes('ChatGLM')).length}</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="data-label">VLM:</span>
+                                    <span class="data-value">${Object.values(models).filter(m => m.data.model_name.includes('Qwen') || m.data.model_name.includes('Gemini')).length}</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="data-label">多模态:</span>
+                                    <span class="data-value">${Object.values(models).filter(m => m.data.model_name.includes('InternLM')).length}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } catch (error) {
+                    console.error('Failed to load models data:', error);
+                }
+            }
+
+            async loadDatasetsData() {
+                try {
+                    const datasets = window.mockDataManager.getDatasets();
+                    const categories = window.mockDataManager.getDatasetCategories();
+                    const content = document.getElementById('datasetsContent');
+                    
+                    content.innerHTML = `
+                        <div class="data-grid">
+                            <div class="data-card">
+                                <h4>数据集统计</h4>
+                                <div class="data-item">
+                                    <span class="data-label">总数据集数:</span>
+                                    <span class="data-value">${datasets.length}</span>
+                                </div>
+                                <div class="data-item">
+                                    <span class="data-label">分类数:</span>
+                                    <span class="data-value">${Object.keys(categories).length}</span>
+                                </div>
+                            </div>
+                            <div class="data-card">
+                                <h4>数据集分类</h4>
+                                ${Object.entries(categories).map(([category, datasetList]) => `
+                                    <div class="data-item">
+                                        <span class="data-label">${category}:</span>
+                                        <span class="data-value">${datasetList.length}个</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                } catch (error) {
+                    console.error('Failed to load datasets data:', error);
+                }
+            }
+
+            async loadMetricsData() {
+                try {
+                    const metrics = window.mockDataManager.getEvaluationMetrics();
+                    const content = document.getElementById('metricsContent');
+                    
+                    content.innerHTML = `
+                        <div class="data-grid">
+                            ${Object.entries(metrics).map(([name, info]) => `
+                                <div class="data-card">
+                                    <h4>${name}</h4>
+                                    <div class="data-item">
+                                        <span class="data-label">描述:</span>
+                                        <span class="data-value">${info.description}</span>
+                                    </div>
+                                    <div class="data-item">
+                                        <span class="data-label">指标数:</span>
+                                        <span class="data-value">${info.metrics.length}</span>
+                                    </div>
+                                    <div class="data-item">
+                                        <span class="data-label">支持数据集:</span>
+                                        <span class="data-value">${info.supported_datasets.length}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                } catch (error) {
+                    console.error('Failed to load metrics data:', error);
+                }
+            }
+
+            async loadConfigData() {
+                try {
+                    const config = window.mockDataManager.getSystemConfig();
+                    const content = document.getElementById('configContent');
+                    
+                    content.innerHTML = `
+                        <div class="data-grid">
+                            <div class="data-card">
+                                <h4>API端点</h4>
+                                ${Object.entries(config.api_endpoints || {}).map(([name, url]) => `
+                                    <div class="data-item">
+                                        <span class="data-label">${name}:</span>
+                                        <span class="data-value">${url}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div class="data-card">
+                                <h4>超时配置</h4>
+                                ${Object.entries(config.timeout || {}).map(([name, value]) => `
+                                    <div class="data-item">
+                                        <span class="data-label">${name}:</span>
+                                        <span class="data-value">${value}ms</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div class="data-card">
+                                <h4>模拟配置</h4>
+                                <div class="data-item">
+                                    <span class="data-label">启用模拟:</span>
+                                    <span class="status-badge ${config.mock?.enabled ? 'status-success' : 'status-warning'}">
+                                        ${config.mock?.enabled ? '是' : '否'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } catch (error) {
+                    console.error('Failed to load config data:', error);
+                }
+            }
+
+            setupEventListeners() {
+                // 重新加载按钮
+                document.getElementById('reloadModelsBtn').addEventListener('click', () => {
+                    this.loadModelsData();
+                });
+
+                document.getElementById('reloadDatasetsBtn').addEventListener('click', () => {
+                    this.loadDatasetsData();
+                });
+
+                document.getElementById('reloadMetricsBtn').addEventListener('click', () => {
+                    this.loadMetricsData();
+                });
+
+                document.getElementById('reloadConfigBtn').addEventListener('click', () => {
+                    this.loadConfigData();
+                });
+
+                // 查看JSON按钮
+                document.getElementById('viewModelsBtn').addEventListener('click', () => {
+                    this.showJsonViewer('模型配置', window.mockDataManager.getData());
+                });
+
+                document.getElementById('viewDatasetsBtn').addEventListener('click', () => {
+                    this.showJsonViewer('数据集配置', {
+                        predefined: window.mockDataManager.getDatasets(),
+                        categories: window.mockDataManager.getDatasetCategories()
+                    });
+                });
+
+                document.getElementById('viewMetricsBtn').addEventListener('click', () => {
+                    this.showJsonViewer('评估指标配置', window.mockDataManager.getEvaluationMetrics());
+                });
+
+                document.getElementById('viewConfigBtn').addEventListener('click', () => {
+                    this.showJsonViewer('系统配置', window.mockDataManager.getSystemConfig());
+                });
+
+                // 工具操作按钮
+                document.getElementById('exportAllBtn').addEventListener('click', () => {
+                    this.exportAllData();
+                });
+
+                document.getElementById('validateDataBtn').addEventListener('click', () => {
+                    this.validateData();
+                });
+
+                document.getElementById('clearCacheBtn').addEventListener('click', () => {
+                    this.clearCache();
+                });
+            }
+
+            showJsonViewer(title, data) {
+                const jsonStr = JSON.stringify(data, null, 2);
+                const content = `
+                    <h4>${title}</h4>
+                    <div class="json-viewer">${jsonStr}</div>
+                `;
+                
+                // 创建模态框显示JSON
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.8);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 1000;
+                `;
+                
+                const modalContent = document.createElement('div');
+                modalContent.style.cssText = `
+                    background: white;
+                    padding: 20px;
+                    border-radius: 10px;
+                    max-width: 80%;
+                    max-height: 80%;
+                    overflow: auto;
+                `;
+                modalContent.innerHTML = content;
+                
+                modal.appendChild(modalContent);
+                document.body.appendChild(modal);
+                
+                modal.addEventListener('click', () => {
+                    document.body.removeChild(modal);
+                });
+            }
+
+            exportAllData() {
+                const allData = {
+                    models: window.mockDataManager.getData(),
+                    datasets: {
+                        predefined: window.mockDataManager.getDatasets(),
+                        categories: window.mockDataManager.getDatasetCategories()
+                    },
+                    metrics: window.mockDataManager.getEvaluationMetrics(),
+                    config: window.mockDataManager.getSystemConfig(),
+                    metadata: window.mockDataManager.getMetadata()
+                };
+
+                const blob = new Blob([JSON.stringify(allData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'autoeval-data-export.json';
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+
+            validateData() {
+                const content = document.getElementById('toolsContent');
+                const models = window.mockDataManager.getData();
+                const datasets = window.mockDataManager.getDatasets();
+                
+                let issues = [];
+                
+                // 检查模型数据完整性
+                Object.entries(models).forEach(([id, model]) => {
+                    if (!model.data || !model.Eval_Statu) {
+                        issues.push(`模型 ${id}: 数据结构不完整`);
+                    }
+                });
+                
+                // 检查数据集引用
+                Object.values(models).forEach(model => {
+                    const vlmevalkitDatasets = model.Eval_Statu.VLMEvalKit.Datasets.split(',').map(d => d.trim());
+                    const vlmevalkitCotDatasets = model.Eval_Statu.VLMEvalKit_COT.Datasets.split(',').map(d => d.trim());
+                    
+                    vlmevalkitDatasets.forEach(dataset => {
+                        if (dataset && !datasets.includes(dataset)) {
+                            issues.push(`VLMEvalKit 引用了未知数据集: ${dataset}`);
+                        }
+                    });
+                    
+                    vlmevalkitCotDatasets.forEach(dataset => {
+                        if (dataset && !datasets.includes(dataset)) {
+                            issues.push(`VLMEvalKit_COT 引用了未知数据集: ${dataset}`);
+                        }
+                    });
+                });
+                
+                if (issues.length === 0) {
+                    content.innerHTML = `
+                        <div class="data-card">
+                            <h4>数据验证结果</h4>
+                            <div class="data-item">
+                                <span class="status-badge status-success">验证通过</span>
+                                <span class="data-value">所有数据完整性检查通过</span>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    content.innerHTML = `
+                        <div class="data-card">
+                            <h4>数据验证结果</h4>
+                            <div class="data-item">
+                                <span class="status-badge status-warning">发现问题</span>
+                                <span class="data-value">发现 ${issues.length} 个问题</span>
+                            </div>
+                            <div style="margin-top: 10px;">
+                                ${issues.map(issue => `<div style="color: #e53e3e; font-size: 0.9rem;">• ${issue}</div>`).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            clearCache() {
+                const content = document.getElementById('toolsContent');
+                
+                // 清除可能的缓存
+                if (window.mockDataManager && window.mockDataManager.reloadData) {
+                    window.mockDataManager.reloadData().then(() => {
+                        content.innerHTML = `
+                            <div class="data-card">
+                                <h4>缓存清理结果</h4>
+                                <div class="data-item">
+                                    <span class="status-badge status-success">清理完成</span>
+                                    <span class="data-value">数据已重新加载</span>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // 重新加载所有数据
+                        setTimeout(() => {
+                            this.loadModelsData();
+                            this.loadDatasetsData();
+                            this.loadMetricsData();
+                            this.loadConfigData();
+                        }, 500);
+                    });
+                } else {
+                    content.innerHTML = `
+                        <div class="data-card">
+                            <h4>缓存清理结果</h4>
+                            <div class="data-item">
+                                <span class="status-badge status-info">无需清理</span>
+                                <span class="data-value">当前无缓存数据</span>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 等待mock.js加载完成
+            setTimeout(() => {
+                if (window.mockDataManager) {
+                    new DataManagerUI();
+                } else {
+                    console.error('Mock data manager not available');
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html> 

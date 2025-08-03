@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoEval Config</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AutoEval Config</h1>
+            <p class="subtitle">管理模型评估状态与数据集配置</p>
+        </header>
+    
+        <div class="controls">
+            <button id="refreshBtn" class="btn btn-primary">
+                <i class="fas fa-sync-alt"></i> 刷新
+            </button>
+            <button id="addBtn" class="btn btn-success">
+                <i class="fas fa-plus"></i> 新增
+            </button>
+            <button id="updateBtn" class="btn btn-primary">
+                <i class="fas fa-save"></i> 更新配置
+            </button>
+        </div>
+    
+        <div id="statusBar" class="status">
+            就绪 - 请加载数据
+        </div>
+    
+        <div class="model-table-container">
+            <div id="modelList">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    正在加载数据...
+                </div>
+            </div>
+        </div>
+
+        <!-- 新增评测状态表格 -->
+        <div class="eval-section">
+            <h2 class="section-title">
+                <i class="fas fa-chart-bar"></i> 模型评测状态
+            </h2>
+            <div class="eval-table-container">
+                <div id="evalLoading" class="loading">
+                    <div class="spinner"></div>
+                    正在加载评测数据...
+                </div>
+                <div id="evalContent" style="display: none;">
+                    <table id="evalTable">
+                        <thead>
+                            <tr>
+                                <th class="model-name">模型名称/数据集</th>
+                                <!-- 列将通过JavaScript动态生成 -->
+                            </tr>
+                        </thead>
+                        <tbody id="evalTableBody">
+                            <!-- 数据将通过JavaScript动态填充 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    
+        <div class="footer">
+            <p>AutoEval Config v1.2 | 前后端分离</p>
+        </div>
+    </div>
+
+    <script src="mock.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

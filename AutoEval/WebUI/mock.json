@@ -1,0 +1,375 @@
+{
+  "modelConfigs": {
+    "1": {
+      "data": {
+        "trained_date": "2024-01-15",
+        "trained_time": "14:30",
+        "model_path": "/models/llama2-7b-chat",
+        "model_name": "LLaMA2-7B-Chat"
+      },
+      "Eval_Statu": {
+        "VLMEvalKit": {
+          "Statu": 1,
+          "Datasets": "refcoco, refcoco+, mmiu, MMMU_DEV_VAL"
+        },
+        "VLMEvalKit_COT": {
+          "Statu": 0,
+          "Datasets": "MMMU_DEV_VAL, refbet"
+        },
+        "MIRB": 1,
+        "mmiu": 1
+      }
+    },
+    "2": {
+      "data": {
+        "trained_date": "2024-01-20",
+        "trained_time": "09:15",
+        "model_path": "/models/qwen-vl-plus",
+        "model_name": "Qwen-VL-Plus"
+      },
+      "Eval_Statu": {
+        "VLMEvalKit": {
+          "Statu": 0,
+          "Datasets": "coco, imagenet, vqa, gqa"
+        },
+        "VLMEvalKit_COT": {
+          "Statu": 1,
+          "Datasets": "vcr, visual7w, clevr, nlvr"
+        },
+        "MIRB": 0,
+        "mmiu": 1
+      }
+    },
+    "3": {
+      "data": {
+        "trained_date": "2024-01-25",
+        "trained_time": "16:45",
+        "model_path": "/models/gemini-pro-vision",
+        "model_name": "Gemini-Pro-Vision"
+      },
+      "Eval_Statu": {
+        "VLMEvalKit": {
+          "Statu": 1,
+          "Datasets": "textvqa, stvqa, ocr-vqa, refcoco"
+        },
+        "VLMEvalKit_COT": {
+          "Statu": 1,
+          "Datasets": "MMMU_DEV_VAL, refbet, mmiu"
+        },
+        "MIRB": 1,
+        "mmiu": 0
+      }
+    },
+    "4": {
+      "data": {
+        "trained_date": "2024-02-01",
+        "trained_time": "11:20",
+        "model_path": "/models/chatglm3-6b-vision",
+        "model_name": "ChatGLM3-6B-Vision"
+      },
+      "Eval_Statu": {
+        "VLMEvalKit": {
+          "Statu": 0,
+          "Datasets": "vqa, gqa, vcr, visual7w"
+        },
+        "VLMEvalKit_COT": {
+          "Statu": 0,
+          "Datasets": "clevr, nlvr, textvqa"
+        },
+        "MIRB": 0,
+        "mmiu": 0
+      }
+    },
+    "5": {
+      "data": {
+        "trained_date": "2024-02-05",
+        "trained_time": "13:10",
+        "model_path": "/models/internlm-xcomposer2",
+        "model_name": "InternLM-XComposer2"
+      },
+      "Eval_Statu": {
+        "VLMEvalKit": {
+          "Statu": 1,
+          "Datasets": "refcoco, refcoco+, refbet, mmiu"
+        },
+        "VLMEvalKit_COT": {
+          "Statu": 1,
+          "Datasets": "MMMU_DEV_VAL, coco, imagenet"
+        },
+        "MIRB": 1,
+        "mmiu": 1
+      }
+    }
+  },
+  "evaluationStatus": {
+    "LLaMA2-7B-Chat": {
+      "standard": {
+        "refcoco": 85.2,
+        "refcoco+": 82.1,
+        "mmiu": 78.5,
+        "MMMU_DEV_VAL": 76.3,
+        "coco": 0,
+        "imagenet": 0,
+        "vqa": 0,
+        "gqa": 0,
+        "textvqa": 0,
+        "stvqa": 0,
+        "ocr-vqa": 0,
+        "vcr": 0,
+        "visual7w": 0,
+        "clevr": 0,
+        "nlvr": 0,
+        "refbet": 0
+      },
+      "COT": {
+        "refcoco": 0,
+        "refcoco+": 0,
+        "mmiu": 0,
+        "MMMU_DEV_VAL": 0,
+        "coco": 0,
+        "imagenet": 0,
+        "vqa": 0,
+        "gqa": 0,
+        "textvqa": 0,
+        "stvqa": 0,
+        "ocr-vqa": 0,
+        "vcr": 0,
+        "visual7w": 0,
+        "clevr": 0,
+        "nlvr": 0,
+        "refbet": 0
+      }
+    },
+    "Qwen-VL-Plus": {
+      "standard": {
+        "refcoco": 0,
+        "refcoco+": 0,
+        "mmiu": 0,
+        "MMMU_DEV_VAL": 0,
+        "coco": 88.7,
+        "imagenet": 91.2,
+        "vqa": 85.9,
+        "gqa": 83.4,
+        "textvqa": 0,
+        "stvqa": 0,
+        "ocr-vqa": 0,
+        "vcr": 0,
+        "visual7w": 0,
+        "clevr": 0,
+        "nlvr": 0,
+        "refbet": 0
+      },
+      "COT": {
+        "refcoco": 0,
+        "refcoco+": 0,
+        "mmiu": 0,
+        "MMMU_DEV_VAL": 0,
+        "coco": 0,
+        "imagenet": 0,
+        "vqa": 0,
+        "gqa": 0,
+        "textvqa": 0,
+        "stvqa": 0,
+        "ocr-vqa": 0,
+        "vcr": 92.1,
+        "visual7w": 89.6,
+        "clevr": 87.3,
+        "nlvr": 84.8,
+        "refbet": 0
+      }
+    },
+    "Gemini-Pro-Vision": {
+      "standard": {
+        "refcoco": 87.5,
+        "refcoco+": 0,
+        "mmiu": 0,
+        "MMMU_DEV_VAL": 0,
+        "coco": 0,
+        "imagenet": 0,
+        "vqa": 0,
+        "gqa": 0,
+        "textvqa": 90.3,
+        "stvqa": 88.7,
+        "ocr-vqa": 86.2,
+        "vcr": 0,
+        "visual7w": 0,
+        "clevr": 0,
+        "nlvr": 0,
+        "refbet": 0
+      },
+      "COT": {
+        "refcoco": 0,
+        "refcoco+": 0,
+        "mmiu": 0,
+        "MMMU_DEV_VAL": 93.1,
+        "coco": 0,
+        "imagenet": 0,
+        "vqa": 0,
+        "gqa": 0,
+        "textvqa": 0,
+        "stvqa": 0,
+        "ocr-vqa": 0,
+        "vcr": 0,
+        "visual7w": 0,
+        "clevr": 0,
+        "nlvr": 0,
+        "refbet": 91.8
+      }
+    },
+    "ChatGLM3-6B-Vision": {
+      "standard": {
+        "refcoco": 0,
+        "refcoco+": 0,
+        "mmiu": 0,
+        "MMMU_DEV_VAL": 0,
+        "coco": 0,
+        "imagenet": 0,
+        "vqa": 79.2,
+        "gqa": 76.8,
+        "textvqa": 0,
+        "stvqa": 0,
+        "ocr-vqa": 0,
+        "vcr": 82.5,
+        "visual7w": 80.1,
+        "clevr": 0,
+        "nlvr": 0,
+        "refbet": 0
+      },
+      "COT": {
+        "refcoco": 0,
+        "refcoco+": 0,
+        "mmiu": 0,
+        "MMMU_DEV_VAL": 0,
+        "coco": 0,
+        "imagenet": 0,
+        "vqa": 0,
+        "gqa": 0,
+        "textvqa": 0,
+        "stvqa": 0,
+        "ocr-vqa": 0,
+        "vcr": 0,
+        "visual7w": 0,
+        "clevr": 78.9,
+        "nlvr": 75.4,
+        "refbet": 0
+      }
+    },
+    "InternLM-XComposer2": {
+      "standard": {
+        "refcoco": 89.3,
+        "refcoco+": 86.7,
+        "mmiu": 84.2,
+        "MMMU_DEV_VAL": 0,
+        "coco": 0,
+        "imagenet": 0,
+        "vqa": 0,
+        "gqa": 0,
+        "textvqa": 0,
+        "stvqa": 0,
+        "ocr-vqa": 0,
+        "vcr": 0,
+        "visual7w": 0,
+        "clevr": 0,
+        "nlvr": 0,
+        "refbet": 81.6
+      },
+      "COT": {
+        "refcoco": 0,
+        "refcoco+": 0,
+        "mmiu": 0,
+        "MMMU_DEV_VAL": 94.5,
+        "coco": 92.8,
+        "imagenet": 90.1,
+        "vqa": 0,
+        "gqa": 0,
+        "textvqa": 0,
+        "stvqa": 0,
+        "ocr-vqa": 0,
+        "vcr": 0,
+        "visual7w": 0,
+        "clevr": 0,
+        "nlvr": 0,
+        "refbet": 0
+      }
+    }
+  },
+  "commonDatasets": {
+    "standard": ["refcoco", "refcoco+", "mmiu", "MMMU_DEV_VAL", "coco", "imagenet", "vqa", "gqa", "textvqa", "stvqa", "ocr-vqa", "vcr", "visual7w", "clevr", "nlvr", "refbet"],
+    "COT": ["refcoco", "refcoco+", "mmiu", "MMMU_DEV_VAL", "coco", "imagenet", "vqa", "gqa", "textvqa", "stvqa", "ocr-vqa", "vcr", "visual7w", "clevr", "nlvr", "refbet"]
+  },
+  "datasets": {
+    "predefined": [
+      "refcoco", "refcoco+", "mmiu", "MMMU_DEV_VAL", "refbet",
+      "coco", "imagenet", "vqa", "gqa", "vcr", "visual7w",
+      "clevr", "nlvr", "textvqa", "stvqa", "ocr-vqa"
+    ],
+    "categories": {
+      "vision_language": ["refcoco", "refcoco+", "refbet", "mmiu"],
+      "image_understanding": ["coco", "imagenet", "vqa", "gqa"],
+      "reasoning": ["vcr", "visual7w", "clevr", "nlvr"],
+      "text_vision": ["textvqa", "stvqa", "ocr-vqa"],
+      "comprehensive": ["MMMU_DEV_VAL"]
+    }
+  },
+  "evaluationMetrics": {
+    "VLMEvalKit": {
+      "description": "视觉语言模型评测工具包",
+      "metrics": ["accuracy", "bleu", "rouge", "f1"],
+      "supported_datasets": ["refcoco", "refcoco+", "mmiu", "MMMU_DEV_VAL", "refbet"]
+    },
+    "VLMEvalKit_COT": {
+      "description": "视觉语言模型链式思维评测工具包",
+      "metrics": ["accuracy", "reasoning_score", "step_accuracy"],
+      "supported_datasets": ["MMMU_DEV_VAL", "refbet", "vcr", "clevr"]
+    },
+    "MIRB": {
+      "description": "多模态推理基准测试",
+      "metrics": ["accuracy", "reasoning_accuracy"],
+      "supported_datasets": ["mmiu", "MMMU_DEV_VAL"]
+    },
+    "mmiu": {
+      "description": "多模态理解评测",
+      "metrics": ["accuracy", "comprehension_score"],
+      "supported_datasets": ["mmiu", "MMMU_DEV_VAL"]
+    }
+  },
+  "modelTypes": {
+    "llm": {
+      "description": "大语言模型",
+      "examples": ["LLaMA2-7B-Chat", "ChatGLM3-6B-Vision"]
+    },
+    "vlm": {
+      "description": "视觉语言模型",
+      "examples": ["Qwen-VL-Plus", "Gemini-Pro-Vision"]
+    },
+    "multimodal": {
+      "description": "多模态模型",
+      "examples": ["InternLM-XComposer2"]
+    }
+  },
+  "systemConfig": {
+    "api_endpoints": {
+      "config": "http://localhost:8009/config",
+      "update": "http://localhost:8009/update",
+      "health": "http://localhost:8009/health"
+    },
+    "timeout": {
+      "connection": 3000,
+      "update": 5000
+    },
+    "mock": {
+      "enabled": true,
+      "delay": {
+        "load": 500,
+        "update": 300,
+        "health": 100
+      }
+    }
+  },
+  "metadata": {
+    "version": "1.0.0",
+    "last_updated": "2024-02-15",
+    "description": "AutoEval系统模拟数据配置文件",
+    "author": "AutoEval Team"
+  }
+} 
