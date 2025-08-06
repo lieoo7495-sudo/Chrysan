@@ -41,3 +41,18 @@ setup(
 pip install .
 python -m build
 ```
+
+
+```
+import ctypes, re, subprocess, pathlib
+so = pathlib.Path('lidar_det_ext.so')
+
+# 1) 列出所有“外部可见”的 C 函数符号
+raw = subprocess.check_output(['nm', '-D', so]).decode()
+funcs = re.findall(r' T ([^\s]+)', raw)
+
+# 2) 过滤掉 C++ 修饰符（用 c++filt）
+clean = subprocess.check_output(['c++filt'], input='\n'.join(funcs).encode()).decode().split()
+
+print(clean)    # 这些就是 ctypes 可能能调到的 C 级函数名
+```
