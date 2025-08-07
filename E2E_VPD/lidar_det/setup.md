@@ -159,3 +159,34 @@ pip install .
 
 python -m build
 ```
+
+
+签名
+```
+import ctypes, inspect, textwrap, sys
+
+def probe(lib, name):
+    fn = getattr(lib, name)
+    fn.argtypes = None
+    fn.restype = None
+    # 先试 0~6 个 int 参数
+    for n in range(7):
+        try:
+            args = (ctypes.c_int,)*n
+            fn(*map(lambda t: t(), args))
+            return f"{name}({', '.join('int' for _ in range(n))}) -> ?"
+        except ArgumentError as e:
+            hint = str(e)
+            if 'LP_' in hint:
+                return f"{name}(...pointer...) -> ?"
+        except TypeError as e:
+            if 'takes' in str(e):
+                continue
+        except Exception:
+            pass
+    return f"{name}(?) -> ?"
+
+lib = ctypes.CDLL('./lidar_det_ext.so')
+for f in ['create_detector', 'process', 'voxelize']:
+    print(probe(lib, f))
+```
