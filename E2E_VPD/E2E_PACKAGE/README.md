@@ -121,3 +121,34 @@ def load_package_module(package_root, module_name, alias):
 original = load_package_module("/abs/path/to/original", "SBEffv2", "original")
 new      = load_package_module("/abs/path/to/new",      "SBEffv2", "new")
 ```
+
+```python
+import os, sys, importlib.util
+
+def mount_pkg(real_dir, fake_name):
+    """
+    把 real_dir 下的包结构挂到 sys.modules[fake_name] 下，
+    之后就可以 from fake_name.xxx import yyy
+    """
+    real_dir = os.path.abspath(real_dir)
+    sys.path.insert(0, real_dir)            # 临时放到最前面
+    spec = importlib.util.spec_from_file_location(
+        fake_name,
+        os.path.join(real_dir, "uvp_module", "__init__.py")
+    )
+    pkg = importlib.util.module_from_spec(spec)
+    sys.modules[fake_name] = pkg
+    spec.loader.exec_module(pkg)
+    return fake_name
+
+# 挂载两份
+original_name = mount_pkg("/abs/path/to/original", "original_uvp")
+new_name      = mount_pkg("/abs/path/to/new",      "new_uvp")
+
+# 现在可以直接 from import
+from original_uvp.datasets_v2.dataset_streameffective import StreamBevV2 as StreamBevV2_original
+from new_uvp.datasets_v2.dataset_streameffective      import StreamBevV2 as StreamBevV2_new
+
+# 验证
+print(StreamBevV2_original is StreamBevV2_new)  # False
+```
