@@ -66,3 +66,33 @@ def load_module_from_path(name, path):
 original = load_module_from_path("original", "/path/to/original/SBEffv2.py")
 new = load_module_from_path("new", "/path/to/new/SBEffv2.py")
 ```
+
+隔离导入，包含路径
+```python
+import importlib.util
+import sys
+import os
+
+def load_isolated(name, py_file_path):
+    spec = importlib.util.spec_from_file_location(name, py_file_path)
+    module = importlib.util.module_from_spec(spec)
+
+    original_path = sys.path[:]
+
+    module_dir = os.path.dirname(os.path.abspath(py_file_path))
+    sys.path.insert(0, module_dir)
+
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.path[:] = original_path
+
+    return module
+
+original = load_isolated("original_sbeff", "/abs/path/to/original/SBEffv2.py")
+new      = load_isolated("new_sbeff",      "/abs/path/to/new/SBEffv2.py")
+```
+
+```python
+
+```
