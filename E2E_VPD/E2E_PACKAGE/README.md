@@ -94,5 +94,30 @@ new      = load_isolated("new_sbeff",      "/abs/path/to/new/SBEffv2.py")
 ```
 
 ```python
+import importlib.util
+import sys
+import os
 
+def load_package_module(package_root, module_name, alias):
+    original_path = sys.path[:]
+
+    sys.path.insert(0, os.path.dirname(package_root))
+
+    try:
+        loader = importlib.machinery.PathFinder.find_module(
+            os.path.basename(package_root), [os.path.dirname(package_root)]
+        )
+        if loader is None:
+            raise ImportError(f"Cannot find package {package_root}")
+
+        pkg = loader.load_module()
+
+        module = importlib.import_module(f"{pkg.__name__}.{module_name}")
+    finally:
+        sys.path[:] = original_path
+
+    return module
+
+original = load_package_module("/abs/path/to/original", "SBEffv2", "original")
+new      = load_package_module("/abs/path/to/new",      "SBEffv2", "new")
 ```
