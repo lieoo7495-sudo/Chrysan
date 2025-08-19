@@ -84,3 +84,21 @@ for box_id, uvb in enumerate(uv.astype(int)):
 
 cv2.imwrite('boxes.png', canvas)   # 或 cv2.imshow(...)
 ```
+
+
+```python
+# corners_lidar  : (N,8,3)  原坐标系（例如 LiDAR）
+T_cam_lidar = np.array([...], dtype=np.float64)  # 4×4
+ones = np.ones((corners_lidar.shape[0], 8, 1))
+corners_cam = (T_cam_lidar @ np.concatenate([corners_lidar, ones], axis=-1)[...,None])[..., :3, 0]
+
+from scipy.spatial.transform import Rotation as Rsc
+
+x,y,z,roll,pitch,yaw = ...            # 米 & 弧度
+R = Rsc.from_euler('XYZ', [roll,pitch,yaw]).as_matrix()
+t = np.array([[x,y,z]])               # (1,3)
+corners_cam = corners_world @ R.T + t
+
+print(corners_cam[0])        # 8 个点 x,y,z 应该都是相机坐标
+print("z range:", corners_cam[...,2].min(), corners_cam[...,2].max())
+```
