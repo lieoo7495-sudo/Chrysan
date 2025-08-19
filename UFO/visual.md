@@ -52,3 +52,35 @@ for b in range(3):
 
 cv2.imwrite('boxes_raw.png', canvas)
 ```
+
+```python
+import cv2
+import numpy as np
+
+# ------------------ 你的输入，直接引用 ------------------
+# corners: (N, 8, 3)  相机坐标系下的 8 个角点
+# K      : (3, 3)     相机内参
+# (h, w) : 图像高、宽
+# -----------------------------------------------------
+
+# 固定 12 条边（每框 8 顶点→12 棱）
+edges = [(0, 1), (1, 2), (2, 3), (3, 0),
+         (4, 5), (5, 6), (6, 7), (7, 4),
+         (0, 4), (1, 5), (2, 6), (3, 7)]
+
+# 新建画布
+canvas = np.zeros((h, w, 3), dtype=np.uint8)
+
+# 投影
+uv = (corners @ K.T)          # (N, 8, 3)
+uv = uv[..., :2] / uv[..., 2:3]  # (N, 8, 2)
+
+# 画框：随机颜色区分不同框
+colors = np.random.randint(50, 255, (corners.shape[0], 3)).tolist()
+
+for box_id, uvb in enumerate(uv.astype(int)):
+    for i, j in edges:
+        cv2.line(canvas, tuple(uvb[i]), tuple(uvb[j]), colors[box_id], 1, cv2.LINE_AA)
+
+cv2.imwrite('boxes.png', canvas)   # 或 cv2.imshow(...)
+```
