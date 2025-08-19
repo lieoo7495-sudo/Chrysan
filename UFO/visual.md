@@ -87,18 +87,38 @@ cv2.imwrite('boxes.png', canvas)   # 或 cv2.imshow(...)
 
 
 ```python
-# corners_lidar  : (N,8,3)  原坐标系（例如 LiDAR）
-T_cam_lidar = np.array([...], dtype=np.float64)  # 4×4
-ones = np.ones((corners_lidar.shape[0], 8, 1))
-corners_cam = (T_cam_lidar @ np.concatenate([corners_lidar, ones], axis=-1)[...,None])[..., :3, 0]
+import cv2
+import numpy as np
 
-from scipy.spatial.transform import Rotation as Rsc
+# ------------------ 输入 ------------------
+# img     : (h, w, 3)  np.uint8  BGR 已有图像
+# corners : (N, 8, 3)  相机坐标系下的 8 个角点
+# K       : (3, 3)     相机内参
+# -----------------------------------------
 
-x,y,z,roll,pitch,yaw = ...            # 米 & 弧度
-R = Rsc.from_euler('XYZ', [roll,pitch,yaw]).as_matrix()
-t = np.array([[x,y,z]])               # (1,3)
-corners_cam = corners_world @ R.T + t
+# 固定 12 条边
+edges = [(0, 1), (1, 2), (2, 3), (3, 0),
+         (4, 5), (5, 6), (6, 7), (7, 4),
+         (0, 4), (1, 5), (2, 6), (3, 7)]
 
-print(corners_cam[0])        # 8 个点 x,y,z 应该都是相机坐标
-print("z range:", corners_cam[...,2].min(), corners_cam[...,2].max())
+# 投影
+uv = (corners @ K.T)          # (N, 8, 3)
+uv = uv[..., :2] / uv[..., 2:3]  # (N, 8, 2)
+
+# 随机颜色区分不同框
+colors = np.random.randint(50, 255, (corners.shape[0], 3)).tolist()
+
+# 直接在已有的 img 上画线
+for box_id, uvb in enumerate(uv.astype(int)):
+    for i, j in edges:
+        cv2.line(img,
+                 tuple(uvb[i]),
+                 tuple(uvb[j]),
+                 colors[box_id],
+                 1,
+                 cv2.LINE_AA)
+
+# 保存或展示
+cv2.imwrite('img_with_boxes.png', img)
+# cv2.imshow('boxes', img); cv2.waitKey(0)
 ```
