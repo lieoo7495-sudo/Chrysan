@@ -365,4 +365,13 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+sudo chmod +x fs-watchdog.py
+sudo ./fs-watchdog.py
+
+sudo ./fs-watchdog.py --debug --log-level DEBUG
+
+sudo crontab -e
+*/15 * * * * /path/to/fs-watchdog.py
+
 ```
