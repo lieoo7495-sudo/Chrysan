@@ -1245,3 +1245,493 @@ def main():
 if __name__ == "__main__":
     main()
 ```
+
+
+0825
+```python
+#!/usr/bin/env python
+
+#
+# 通用文件系统监控工具 - 自动检测所有文件系统
+#
+# 当磁盘空间或inode接近耗尽时发出警报
+#
+# 在Linux系统上使用
+#
+# 示例:
+# sudo fs-watchdog.py --mount-points / /home
+#
+
+import argparse
+import subprocess
+import sys
+import os
+import re
+import logging
+import json
+import platform
+
+# ===================== 配置区域 =====================
+# 默认监控阈值
+DEFAULT_SPACE_THRESHOLD = 0.90      # 默认空间使用率警报阈值 (90%)
+DEFAULT_INODE_THRESHOLD = 0.90      # 默认inode使用率警报阈值 (90%)
+DEFAULT_AVAILABLE_THRESHOLD = 10    # 默认可用空间警报阈值 (10GB)
+
+# 特殊分区阈值配置 (可覆盖默认阈值)
+THRESHOLD_OVERRIDES = {
+    # 格式: 挂载点: {"space": 阈值, "inode": 阈值, "available": 阈值(GB)}
+    "/": {"space": 0.90, "inode": 0.90, "available": 5},
+    "/boot": {"space": 0.85, "inode": 0.85, "available": 0.1},
+    "/var": {"space": 0.85, "inode": 0.90, "available": 5},
+    "/home": {"space": 0.95, "inode": 0.95, "available": 5},
+    # 添加其他特殊分区配置
+}
+
+# 排除的伪文件系统类型
+EXCLUDED_FS_TYPES = [
+    "tmpfs", "devtmpfs", "devpts", "proc", "sysfs",
+    "cgroup", "cgroup2", "overlay", "autofs", "mqueue",
+    "debugfs", "tracefs", "configfs", "fusectl", "securityfs",
+    "pstore", "efivarfs", "hugetlbfs", "binfmt_misc"
+]
+
+# 广播配置
+BROADCAST_ENABLED = True            # 是否启用终端广播
+MESSAGE_LANGUAGE = "zh"             # 消息语言: 'zh' 中文, 'en' 英文
+
+# 日志配置
+LOG_FILE = "/var/log/fs-watchdog.log"
+# ===================================================
+
+def get_message(key):
+    """根据语言设置获取消息内容"""
+    messages = {
+        "zh": {
+            "alert_title": "【紧急】文件系统即将满载",
+            "usage_full": "{}空间使用率: {:.1f}% ({}/{})",
+            "inode_full": "{} inode使用率: {:.1f}% ({}/{})",
+            "available_full": "{}可用空间不足: {} (低于阈值 {})",
+            "prompt": "请检查存储使用情况或联系管理员",
+            "normal": "所有文件系统状态正常",
+            "partition_header": "正在监控 {} 文件系统",
+            "broadcast_sent": "警报已广播至所有终端",
+            "broadcast_failed": "广播失败: {}",
+            "broadcast_skipped": "警报未广播：需要root权限",
+            "invalid_mount_point": "指定的挂载点不存在或不可访问: {}"
+        },
+        "en": {
+            "alert_title": "【URGENT】File System Approaching Full",
+            "usage_full": "{} usage: {:.1f}% ({}/{})",
+            "inode_full": "{} inode usage: {:.1f}% ({}/{})",
+            "available_full": "{} available space low: {} (below threshold {})",
+            "prompt": "Please check storage usage or contact admin",
+            "normal": "All file systems are in good standing",
+            "partition_header": "Monitoring {} file system",
+            "broadcast_sent": "Alert broadcasted to all terminals",
+            "broadcast_failed": "Broadcast failed: {}",
+            "broadcast_skipped": "Alert not broadcasted: root required",
+            "invalid_mount_point": "Specified mount point does not exist or is not accessible: {}"
+        }
+    }
+    return messages[MESSAGE_LANGUAGE][key]
+
+def setup_logging(log_level=logging.INFO):
+    """配置日志系统"""
+    logger = logging.getLogger()
+    logger.setLevel(log_level)
+    
+    # 文件日志
+    file_handler = logging.FileHandler(LOG_FILE)
+    file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(file_formatter)
+    logger.addHandler(file_handler)
+    
+    # 控制台日志
+    console_handler = logging.StreamHandler()
+    console_formatter = logging.Formatter('%(levelname)s: %(message)s')
+    console_handler.setFormatter(console_formatter)
+    logger.addHandler(console_handler)
+
+def broadcast_alert(msg):
+    """向所有登录用户的终端发送警报消息"""
+    if not BROADCAST_ENABLED:
+        return
+        
+    try:
+        # 使用wall命令广播消息
+        broadcast_cmd = [
+            "wall",
+            f"\n\n***** {get_message('alert_title')} *****\n{msg}\n\n{get_message('prompt')}\n"
+        ]
+        
+        # 需要root权限才能广播
+        if os.geteuid() == 0:
+            result = subprocess.run(
+                broadcast_cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            if result.returncode == 0:
+                logging.info(get_message("broadcast_sent"))
+                # 在调试模式下也显示广播内容
+                if logging.getLogger().isEnabledFor(logging.DEBUG):
+                    print(f"\n\n***** {get_message('alert_title')} *****")
+                    print(msg)
+                    print(f"\n{get_message('prompt')}\n")
+            else:
+                error_msg = result.stderr.strip()
+                logging.error(get_message("broadcast_failed").format(error_msg))
+        else:
+            logging.warning(get_message("broadcast_skipped"))
+    except Exception as e:
+        logging.error(f"广播过程中出错: {str(e)}")
+
+def run_cmd(cmd, check=True):
+    """执行系统命令并返回输出"""
+    try:
+        result = subprocess.run(
+            cmd,
+            stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            check=check,
+            encoding="utf-8",
+        )
+        return result.stdout.strip()
+    except subprocess.CalledProcessError as exc:
+        error_msg = f"命令执行失败: {' '.join(cmd)}\n错误信息: {exc.stderr.strip()}"
+        logging.error(error_msg)
+        if check:
+            raise
+        return ""
+    except Exception as e:
+        logging.error(f"命令执行异常: {str(e)}")
+        return ""
+
+def parse_size(size_str):
+    """将大小字符串(1K-blocks)转换为字节数"""
+    try:
+        # df --output 返回的是1K-blocks为单位的大小
+        return int(size_str) * 1024
+    except (ValueError, TypeError):
+        return None
+
+def get_file_systems(mount_points=None):
+    """获取所有文件系统的信息"""
+    # 获取所有文件系统的df输出
+    cmd = ["df", "--output=source,fstype,size,used,avail,pcent,target"]
+    output = run_cmd(cmd, check=False)
+    
+    # 解析df输出
+    lines = output.splitlines()
+    if len(lines) < 2:
+        logging.error("df命令返回的输出不足")
+        return []
+    
+    # 解析标题行
+    headers = ["filesystem", "fstype", "size", "used", "avail", "use%", "mounted_on"]
+    file_systems = []
+    
+    for line in lines[1:]:
+        # 分割行并确保有足够的列
+        parts = re.split(r"\s+", line.strip(), maxsplit=len(headers)-1)
+        if len(parts) != len(headers):
+            continue
+            
+        fs_info = dict(zip(headers, parts))
+        
+        # 转换百分比值为浮点数
+        if fs_info["use%"].endswith('%'):
+            fs_info["use%"] = float(fs_info["use%"][:-1])
+        else:
+            fs_info["use%"] = float(fs_info["use%"])
+        
+        # 如果指定了挂载点，只保留指定的
+        if mount_points and fs_info["mounted_on"] not in mount_points:
+            continue
+            
+        file_systems.append(fs_info)
+    
+    return file_systems
+
+def get_inode_usage(mount_point):
+    """获取指定挂载点的inode使用情况"""
+    cmd = ["df", "-i", "-P", mount_point]
+    output = run_cmd(cmd, check=False)
+    
+    # 解析df -i输出
+    lines = output.splitlines()
+    if len(lines) < 2:
+        logging.warning(f"无法获取分区 {mount_point} 的inode使用情况")
+        return None, None, None
+        
+    # 第二行是数据行
+    headers = lines[0].split()
+    data = lines[1].split()
+    
+    if len(data) < len(headers):
+        return None, None, None
+        
+    try:
+        fs_info = dict(zip(headers, data))
+        total_inodes = int(fs_info["Inodes"])
+        used_inodes = int(fs_info["IUsed"])
+        use_percent = float(fs_info["IUse%"].rstrip('%'))
+        return total_inodes, used_inodes, use_percent
+    except (ValueError, KeyError) as e:
+        logging.error(f"解析inode数据出错: {str(e)}")
+        return None, None, None
+
+def get_threshold_config(mount_point):
+    """获取指定挂载点的阈值配置"""
+    # 检查是否有特殊配置
+    if mount_point in THRESHOLD_OVERRIDES:
+        return {
+            "space": THRESHOLD_OVERRIDES[mount_point].get("space", DEFAULT_SPACE_THRESHOLD),
+            "inode": THRESHOLD_OVERRIDES[mount_point].get("inode", DEFAULT_INODE_THRESHOLD),
+            "available": THRESHOLD_OVERRIDES[mount_point].get("available", DEFAULT_AVAILABLE_THRESHOLD)
+        }
+    
+    # 返回默认配置
+    return {
+        "space": DEFAULT_SPACE_THRESHOLD,
+        "inode": DEFAULT_INODE_THRESHOLD,
+        "available": DEFAULT_AVAILABLE_THRESHOLD
+    }
+
+def format_size(size_bytes):
+    """格式化大小为人类可读字符串"""
+    if size_bytes is None:
+        return "N/A"
+        
+    units = ['B', 'K', 'M', 'G', 'T', 'P']
+    unit_index = 0
+    size = size_bytes
+    
+    while size >= 1024 and unit_index < len(units)-1:
+        size /= 1024
+        unit_index += 1
+    
+    return f"{size:.2f}{units[unit_index]}"
+
+def format_inodes(inode_count):
+    """格式化inode数量为人类可读字符串"""
+    if inode_count is None:
+        return "N/A"
+        
+    if inode_count >= 1_000_000:
+        return f"{inode_count/1_000_000:.2f}M"
+    if inode_count >= 1_000:
+        return f"{inode_count/1_000:.2f}K"
+    return f"{inode_count}"
+
+def get_args():
+    """解析命令行参数"""
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-d", "--debug", action='store_true', help="启用调试模式")
+    parser.add_argument("--no-broadcast", action='store_true', help="禁用终端广播")
+    parser.add_argument("--lang", choices=["zh", "en"], default=MESSAGE_LANGUAGE, 
+                        help="设置消息语言 (zh: 中文, en: 英文)")
+    parser.add_argument("--log-level", choices=["DEBUG", "INFO", "WARNING", "ERROR"], 
+                        default="INFO", help="设置日志级别")
+    parser.add_argument("--dump-config", action='store_true', 
+                        help="显示当前配置并退出")
+    parser.add_argument("--mount-points", nargs="+", metavar="MOUNT_POINT",
+                        help="指定要监控的挂载点(空格分隔)，如未指定则监控所有")
+    return parser.parse_args()
+
+def validate_mount_points(mount_points):
+    """验证指定的挂载点是否存在"""
+    if not mount_points:
+        return True
+        
+    cmd = ["df", "--output=target"]
+    output = run_cmd(cmd, check=False)
+    
+    existing_mounts = set()
+    for line in output.splitlines()[1:]:  # 跳过标题行
+        mount = line.strip()
+        if mount:
+            existing_mounts.add(mount)
+    
+    invalid_mounts = []
+    for mp in mount_points:
+        if mp not in existing_mounts:
+            invalid_mounts.append(mp)
+    
+    if invalid_mounts:
+        for mp in invalid_mounts:
+            logging.error(get_message("invalid_mount_point").format(mp))
+        return False
+    
+    return True
+
+def main():
+    """主监控逻辑"""
+    try:
+        # 解析命令行参数
+        args = get_args()
+        
+        # 配置日志
+        log_level = logging.DEBUG if args.debug else getattr(logging, args.log_level.upper())
+        setup_logging(log_level)
+        
+        # 设置全局语言
+        global MESSAGE_LANGUAGE
+        MESSAGE_LANGUAGE = args.lang
+        
+        # 设置是否广播
+        global BROADCAST_ENABLED
+        if args.no_broadcast:
+            BROADCAST_ENABLED = False
+            
+        # 验证指定的挂载点
+        if args.mount_points and not validate_mount_points(args.mount_points):
+            sys.exit(1)
+            
+        # 如果请求显示配置，则打印配置并退出
+        if args.dump_config:
+            print("当前文件系统监控配置:")
+            print(f"默认空间阈值: {DEFAULT_SPACE_THRESHOLD*100:.1f}%")
+            print(f"默认inode阈值: {DEFAULT_INODE_THRESHOLD*100:.1f}%")
+            print(f"默认可用空间阈值: {DEFAULT_AVAILABLE_THRESHOLD}GB")
+            print("\n特殊分区配置:")
+            for mount_point, config in THRESHOLD_OVERRIDES.items():
+                print(f"  {mount_point}:")
+                print(f"    空间阈值: {config.get('space', DEFAULT_SPACE_THRESHOLD)*100:.1f}%")
+                print(f"    inode阈值: {config.get('inode', DEFAULT_INODE_THRESHOLD)*100:.1f}%")
+                print(f"    可用空间阈值: {config.get('available', DEFAULT_AVAILABLE_THRESHOLD)}GB")
+            sys.exit(0)
+
+        # 获取所有文件系统
+        file_systems = get_file_systems(args.mount_points)
+        if not file_systems:
+            logging.error("未找到任何文件系统")
+            sys.exit(1)
+            
+        logging.info(f"发现 {len(file_systems)} 个文件系统")
+        alerts = []
+        
+        for fs in file_systems:
+            mount_point = fs["mounted_on"]
+            fs_type = fs["fstype"]
+            
+            # 跳过伪文件系统
+            if fs_type in EXCLUDED_FS_TYPES:
+                logging.debug(f"跳过伪文件系统: {mount_point} ({fs_type})")
+                continue
+                
+            # 跳过特殊挂载点
+            if mount_point.startswith(("/run", "/sys", "/proc", "/dev")):
+                logging.debug(f"跳过系统挂载点: {mount_point}")
+                continue
+                
+            logging.info(get_message("partition_header").format(mount_point))
+            
+            # 获取阈值配置
+            config = get_threshold_config(mount_point)
+            
+            # 解析空间信息
+            try:
+                size_bytes = parse_size(fs["size"])
+                used_bytes = parse_size(fs["used"])
+                avail_bytes = parse_size(fs["avail"])
+                
+                # 计算空间使用率
+                if size_bytes and used_bytes:
+                    space_usage_percent = (used_bytes / size_bytes) * 100
+                else:
+                    space_usage_percent = fs["use%"]
+                
+                # 检查空间使用率
+                if space_usage_percent > config["space"] * 100:
+                    msg = get_message("usage_full").format(
+                        mount_point,
+                        space_usage_percent,
+                        format_size(used_bytes),
+                        format_size(size_bytes)
+                    )
+                    alerts.append(msg)
+                
+                # 检查可用空间
+                if avail_bytes and avail_bytes < config["available"] * (1024**3):  # 转换为字节
+                    msg = get_message("available_full").format(
+                        mount_point,
+                        format_size(avail_bytes),
+                        f"{config['available']}GB"
+                    )
+                    alerts.append(msg)
+                
+                # 获取inode使用情况
+                total_inodes, used_inodes, inode_usage_percent = get_inode_usage(mount_point)
+                
+                if inode_usage_percent is not None and inode_usage_percent > config["inode"] * 100:
+                    msg = get_message("inode_full").format(
+                        mount_point,
+                        inode_usage_percent,
+                        format_inodes(used_inodes),
+                        format_inodes(total_inodes)
+                    )
+                    alerts.append(msg)
+                
+                # 调试信息
+                if logging.getLogger().isEnabledFor(logging.DEBUG):
+                    debug_info = [
+                        f"挂载点: {mount_point}",
+                        f"类型: {fs_type}",
+                        f"空间: {format_size(size_bytes)} 已用: {format_size(used_bytes)} "
+                        f"可用: {format_size(avail_bytes)} 使用率: {space_usage_percent:.1f}%",
+                    ]
+                    
+                    if inode_usage_percent is not None:
+                        debug_info.append(f"inode: 总数: {format_inodes(total_inodes)} "
+                                         f"已用: {format_inodes(used_inodes)} "
+                                         f"使用率: {inode_usage_percent:.1f}%")
+                    
+                    debug_info.append(f"阈值: 空间={config['space']*100:.1f}% "
+                                    f"inode={config['inode']*100:.1f}% "
+                                    f"可用空间={config['available']}GB")
+                    
+                    logging.debug("\n  ".join(debug_info))
+                    
+            except Exception as e:
+                logging.error(f"处理挂载点 {mount_point} 时出错: {str(e)}")
+                continue
+        
+        # 处理报警
+        if alerts:
+            alert_title = get_message("alert_title")
+            alert_msg = "\n".join(alerts)
+            
+            logging.warning(alert_title)
+            logging.warning(alert_msg)
+            
+            # 发送广播警报（包括调试终端）
+            broadcast_alert(alert_msg)
+            sys.exit(1)  # 退出状态码1表示有警报
+        else:
+            msg = get_message("normal")
+            logging.info(msg)
+            print(msg)
+            sys.exit(0)  # 退出状态码0表示一切正常
+
+    except PermissionError:
+        error_msg = "错误：需要root权限运行此脚本\n请使用: sudo ./fs-watchdog.py"
+        logging.error(error_msg)
+        print(error_msg)
+        sys.exit(1)
+    except Exception as e:
+        error_msg = f"脚本执行出错: {str(e)}"
+        logging.exception(error_msg)
+        print(error_msg)
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
+
+       sudo ./fs-watchdog.py --mount-points / /home /var
+          sudo ./fs-watchdog.py
+   sudo ./fs-watchdog.py --mount-points / /home
+   sudo ./fs-watchdog.py --mount-points /var --debug --log-level DEBUG
+      sudo ./fs-watchdog.py --dump-config
+```
